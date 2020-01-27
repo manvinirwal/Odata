@@ -1,0 +1,169 @@
+package org.olingo.client.sample;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.PostConstruct;
+
+import org.apache.olingo.odata2.api.batch.BatchException;
+import org.apache.olingo.odata2.api.client.batch.BatchPart;
+import org.apache.olingo.odata2.api.client.batch.BatchQueryPart;
+import org.apache.olingo.odata2.api.client.batch.BatchSingleResponse;
+import org.apache.olingo.odata2.api.commons.HttpHeaders;
+import org.apache.olingo.odata2.api.ep.EntityProvider;
+import org.apache.olingo.odata2.core.batch.v2.BatchParser;
+import org.springframework.stereotype.Service;
+
+
+@Service
+public class BatchWriter {
+private static final String BOUNDARY="batch_abc123"; 
+public BatchWriter() {}
+private BatchQueryPart individualRequest(){
+    HashMap<String, String>headers=new HashMap<String, String>();
+	headers.put("Content-Type","application/http");
+	headers.put("Content-Transfer_encoding","binary");
+  return createBatchQueryPart(headers,"https://services.odata.org/Northwind/Northwind.svc/Products(1)");
+}
+  private BatchQueryPart createBatchQueryPart(Map<String, String>headers,String uri) {
+      return BatchQueryPart.method("GET")
+          .uri(uri)
+          .headers(headers)
+          .build();
+  }
+  
+ @PostConstruct
+ public void createBatchRequest() {
+	 List<BatchPart> batchParts = new ArrayList<BatchPart>();
+	 batchParts.add(individualRequest());
+	 InputStream payload = EntityProvider.writeBatchRequest(batchParts, BOUNDARY);
+	 BatchParser parser = new BatchParser("multipart/mixed;boundary=batch_abc123", true);
+	  try {
+		List<BatchSingleResponse> responses = parser.parseBatchResponse(payload);
+		for (BatchSingleResponse response : responses) {
+		      //response.getStatusCode();
+		      //response.getStatusInfo();
+		      response.getHeader(HttpHeaders.CONTENT_TYPE);
+		      response.getBody();
+		      response.getContentId();
+		    //  System.out.println(response.getStatusInfo());
+		}
+		
+	} catch (BatchException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+ }
+	
+}
+
+
+//package org.olingo.client.sample;
+//
+//import java.io.ByteArrayInputStream;
+//import java.io.InputStream;
+//import java.util.List;
+//import java.util.Map;
+//import java.io.*;
+// 
+//import org.apache.olingo.odata2.api.client.batch.BatchChangeSet;
+//import org.apache.olingo.odata2.api.client.batch.BatchChangeSetPart;
+//import org.apache.olingo.odata2.api.client.batch.BatchPart;
+//import org.apache.olingo.odata2.api.client.batch.BatchQueryPart;
+//import org.apache.olingo.odata2.api.commons.HttpContentType;
+//import org.apache.olingo.odata2.api.commons.HttpHeaders;
+//import org.apache.olingo.odata2.core.batch.BatchHelper;
+// 
+//public class BatchRequestWriter {
+//  private static final String REG_EX_BOUNDARY =
+//      "([a-zA-Z0-9_\\-\\.'\\+]{1,70})|\"([a-zA-Z0-9_\\-\\.'\\+\\s\\" +
+//          "(\\),/:=\\?]{1,69}[a-zA-Z0-9_\\-\\.'\\+\\(\\),/:=\\?])\""; // See RFC 2046
+// 
+//  private static final String COLON = ":";
+//  private static final String SP = " ";
+//  private static final String LF = "\r\n";
+//  private String batchBoundary;
+//  private StringBuilder writer = new StringBuilder();
+//  
+//  
+//  private BatchQueryPart createBatchQueryPart(Map<String, String>headers,String uri) {
+//
+//      return BatchQueryPart.method("GET")
+//          .uri(uri)
+//          .headers(headers)
+//          .build();
+//  }
+// 
+//  public InputStream writeBatchRequest(final List<BatchQueryPart> batchParts, final String boundary) {
+//    if (boundary.matches(REG_EX_BOUNDARY)) {
+//      batchBoundary = boundary;
+//    } else {
+//      throw new IllegalArgumentException();
+//    }
+//    for (BatchPart batchPart : batchParts) {
+//      writer.append("--" + boundary).append(LF);
+//        BatchQueryPart request = (BatchQueryPart) batchPart;
+//        appendRequestBodyPart(request.getMethod(), request.getUri(), null, request.getHeaders(),
+//            request.getContentId());
+//      
+//    }
+//    writer.append("--").append(boundary).append("--").append(LF).append(LF);
+//    InputStream batchRequestBody;
+//    batchRequestBody = new ByteArrayInputStream(writer.toString().getBytes());
+//    return batchRequestBody;
+//  }
+// 
+//
+// 
+//  private void appendRequestBodyPart(final String method, final String uri, final String body,
+//      final Map<String, String> headers, final String contentId) {
+//    boolean isContentLengthPresent = false;
+//    writer.append(HttpHeaders.CONTENT_TYPE).append(COLON).append(SP).append(HttpContentType.APPLICATION_HTTP)
+//        .append(LF);
+//    writer.append(BatchHelper.HTTP_CONTENT_TRANSFER_ENCODING).append(COLON).append(SP).append("binary").append(LF);
+//    if (contentId != null) {
+//      writer.append(BatchHelper.HTTP_CONTENT_ID).append(COLON).append(SP).append(contentId).append(LF);
+//    }
+//    String contentLength = getHeaderValue(headers, HttpHeaders.CONTENT_LENGTH);
+//    if (contentLength != null && !contentLength.isEmpty()) {
+//      isContentLengthPresent = true;
+//    }
+//    writer.append(LF);
+//    writer.append(method).append(SP).append(uri).append(SP).append("HTTP/1.1");
+//    writer.append(LF);
+// 
+//    if (!isContentLengthPresent && body != null && !body.isEmpty()) {
+//      writer.append(HttpHeaders.CONTENT_LENGTH).append(COLON).append(SP).append(body.getBytes().length)
+//          .append(LF);
+// 
+//    }
+//    appendHeader(headers);
+// 
+//    if (body != null && !body.isEmpty()) {
+//      writer.append(LF);
+//      writer.append(body);
+//    }
+//    writer.append(LF).append(LF);
+//  }
+// 
+//  private void appendHeader(final Map<String, String> headers) {
+//    for (Map.Entry<String, String> headerMap : headers.entrySet()) {
+//      String name = headerMap.getKey();
+//      writer.append(name).append(COLON).append(SP).append(headerMap.getValue()).append(LF);
+// 
+//    }
+//  }
+// 
+//  private String getHeaderValue(final Map<String, String> headers, final String headerName) {
+//    for (Map.Entry<String, String> header : headers.entrySet()) {
+//      if (headerName.equalsIgnoreCase(header.getKey())) {
+//        return header.getValue();
+//      }
+//    }
+//    return null;
+//  }
+//}
+
