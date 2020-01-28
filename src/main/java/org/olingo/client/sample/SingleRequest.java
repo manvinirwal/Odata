@@ -1,20 +1,15 @@
 package org.olingo.client.sample;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
 
 import org.apache.olingo.odata2.api.commons.HttpStatusCodes;
 import org.apache.olingo.odata2.api.edm.Edm;
@@ -31,7 +26,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 
-public class OlingoSampleApp {
+public class SingleRequest {
   public static final String HTTP_METHOD_PUT = "PUT";
   public static final String HTTP_METHOD_POST = "POST";
   public static final String HTTP_METHOD_GET = "GET";
@@ -39,7 +34,7 @@ public class OlingoSampleApp {
   public static final String HTTP_HEADER_CONTENT_TYPE = "Content-Type";
   public static final String HTTP_HEADER_ACCEPT = "Accept";
 
-  public static final String APPLICATION_JSON = "application/json; odata.metadata=none";
+  public static final String APPLICATION_JSON = "application/json";
   public static final String APPLICATION_XML = "application/xml";
   public static final String APPLICATION_ATOM_XML = "application/atom+xml";
   public static final String APPLICATION_FORM = "application/x-www-form-urlencoded";
@@ -51,19 +46,14 @@ public class OlingoSampleApp {
   private  String serviceUrl = "https://services.odata.org/Northwind/Northwind.svc";
   private String usedFormat = APPLICATION_ATOM_XML;
   private Edm edm;
-  public OlingoSampleApp() {}
+  public SingleRequest() {}
   @PostConstruct
   // InputStream content = execute(absolutUri+"?$filter=UnitsInStock%20eq%2039", contentType, HTTP_METHOD_GET);
   public void init() throws Exception {
-//	  BatchWriter batchWriter=new BatchWriter();
-//	  batchWriter.addIndividualRequest();
-	  
-    //OlingoSampleApp app = new OlingoSampleApp();
 	  this.edm = readEdm(this.serviceUrl);
       ODataEntry entry =readEntry(this.edm, serviceUrl, usedFormat, "Products", "1",null);
     
   }
-
 
   public Edm readEdm(String serviceUrl) throws IOException, ODataException {
     InputStream content = execute(serviceUrl + SEPARATOR + METADATA, APPLICATION_XML, HTTP_METHOD_GET);
@@ -91,10 +81,8 @@ public class OlingoSampleApp {
 		  }
       });
 	  return list;
-	
   }
-
-
+  
   public ODataEntry readEntry(Edm edm, String serviceUri, String contentType, 
       String entitySetName, String keyValue, String expandRelationName)
       throws IOException, ODataException {
